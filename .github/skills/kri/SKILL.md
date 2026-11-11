@@ -1,13 +1,13 @@
 ---
 name: kri
-description: Develops quantifiable Key Risk Indicators (KRIs) for enterprise risks, up to 10 per risk per run, leading indicators first, each with Low (Green), Medium (Amber) and High (Red) trigger thresholds, saved to kri_register.csv. Works from a risk register of any filename (default risk_register.csv as produced by the erm skill https://github.com/wai-kwan/enterprise-risk-management), a partial or non-standard register, or a single risk in the prompt; if parameters are missing it invokes the erm skill, when available, to generate them first. The user can choose the risks and the number of KRIs, and re-run to add or replace KRIs. Use whenever the user mentions KRIs, key risk indicators, early warning indicators, risk monitoring metrics, risk thresholds or appetite triggers, or wants to monitor a risk or risk register, even if they do not say "KRI".
+description: Develops quantifiable Key Risk Indicators (KRIs) for enterprise risks, up to 10 per risk per run, leading indicators first, each with Low (Green), Medium (Amber) and High (Red) trigger thresholds, saved to kri_register.csv. Works from a risk register of any filename (default risk_register.csv as produced by the erm skill, or a register from the risk-discovery skill), a partial or non-standard register, or a single risk in the prompt; if parameters are missing it invokes the erm skill's Completion Mode, when available, to complete them first. The user can choose the risks and the number of KRIs, and re-run to add or replace KRIs. Use whenever the user mentions KRIs, key risk indicators, early warning indicators, risk monitoring metrics, risk thresholds or appetite triggers, or wants to monitor a risk or risk register, even if they do not say "KRI".
 license: Apache-2.0
-compatibility: Any agentskills.io compatible workspace. Designed to consume the risk_register.csv output of the erm skill (https://github.com/wai-kwan/enterprise-risk-management) or any other register file, and to invoke the erm skill when it is available, but does not require it.
+compatibility: Any agentskills.io compatible workspace. Designed to consume the register output of the erm skill (https://github.com/wai-kwan/enterprise-risk-management) or the risk-discovery skill (https://github.com/wai-kwan/risk-discovery), or any other register file, and to invoke erm's Completion Mode (erm 1.2.0 or later) when it is available, but does not require either skill.
 metadata:
   tags: "enterprise-risk-management, erm, kri, key-risk-indicators, early-warning, risk-monitoring, risk-management, ai-agents, skills, ai-agents-skill"
   written_by: wai-kwan
   github: "https://github.com/wai-kwan"
-  version: "1.1.0"
+  version: "1.2.0"
   domain: Enterprise Risk Management, Key Risk Indicators, KRI, Risk Monitoring, AI Agents Skill
   standard: Enterprise Risk Management Workflow Specification
 ---
@@ -15,6 +15,11 @@ metadata:
 # Key Risk Indicator (KRI) Skill
 
 This skill designs measurable indicators, with traffic light thresholds, that warn the organisation early that a risk is moving towards materialising. It is the companion of the **erm** skill (https://github.com/wai-kwan/enterprise-risk-management): erm identifies and rates the risks, this skill says what to measure to know a risk is starting to go wrong.
+
+## Companion Skills
+Both companions share the erm 14 column register format. Neither is required.
+- **erm** (https://github.com/wai-kwan/enterprise-risk-management): identifies and rates risks, and its **Completion Mode** (erm 1.2.0 or later) completes a partial register. This skill uses it to fill missing risk parameters (see "Completing Missing Risk Parameters with the erm Skill").
+- **risk-discovery** (https://github.com/wai-kwan/risk-discovery): discovers risks through a facilitated workshop or interview and saves them as an erm format register, which this skill reads like any other register. A rank only session leaves the rating columns empty, so erm proposes the ratings before KRIs are built.
 
 ## When to Use This Skill
 - The user has a risk register (the erm skill's `risk_register.csv` or any other file), full, partial or in a different format, and wants KRIs.
@@ -52,7 +57,7 @@ Columns may be missing, renamed, reordered or blank, or the structure may differ
 3. **Proceed with what you have.** The only hard minimum is a **risk description** per risk. A Risk Title alone is accepted as the description, and a description with no title gets a concise title written from a risk perspective.
 4. **Fill the gaps**, by invoking the erm skill when available, otherwise by inference:
    - **Risk ID missing**: assign R1, R2, ... in the order given (or the next unused ID if `kri_register.csv` exists).
-   - **Causes or Effects missing**: obtain them from erm. Only if erm is unavailable, infer the most plausible ones and mark them in "Linked Cause or Effect" (for example `Inferred: lack of AI talent`).
+   - **Causes or Effects missing, or only one given**: obtain them from erm, which aims for 2 to 3 of each and keeps the user's own items first. Only if erm is unavailable, infer the most plausible ones in the same way (2 to 3 per risk, never more than 3, keeping any the user gave) and mark the inferred ones in "Linked Cause or Effect" (for example `Inferred: lack of AI talent`).
    - **Risk Criticality missing**: erm supplies ratings if available. Otherwise, if Likelihood Scale and Impact Scale are present, compute score = likelihood x impact and map it (20 to 25 CRITICAL, 10 to 19 HIGH, 5 to 9 MODERATE, 1 to 4 LOW); if only a Risk Score exists, map that; if nothing exists, use `Not rated` and the MODERATE sizing band.
    - **Controls missing**: ignore them.
 
@@ -67,23 +72,23 @@ State in the closing message which input type and file were used and what was in
 ---
 
 ## Completing Missing Risk Parameters with the erm Skill
-When the register is not available or incomplete, use the erm skill to fill the gaps before generating KRIs.
+When the register is not available or incomplete, use the erm skill's **Completion Mode** to fill the gaps before generating KRIs.
 
-**When it applies:** the input is type B or C, or any in-scope risk lacks Causes, Effects, or a rating (Likelihood, Impact, Risk Score or Risk Criticality). A register missing only Controls or Category is complete enough. Skip this step if the user says not to use erm, or if the in-scope risks were already completed in an earlier run (reuse that register, see below).
+**When it applies:** the input is type B or C, or any in-scope risk lacks Causes, Effects, or a rating (Likelihood, Impact, Risk Score or Risk Criticality), or has only one Cause or one Effect. A register missing only Controls or Category is complete enough. This includes rank only registers from the risk-discovery skill, whose rating columns are empty. Skip this step if the user says not to use erm, or if the in-scope risks were already completed in an earlier run (reuse that register, see below).
 
 **Naming the new register.** Write the completed register to a new file: the original file name without extension, plus `_kri`, plus `.csv` (`risk_register.csv` becomes `risk_register_kri.csv`, `Q3_risks.xlsx` becomes `Q3_risks_kri.csv`). With no original file the base name is `risk_register`. If that `_kri` file already exists from an earlier run, use it as the working register for that original (original values plus erm completed fields) and update it only for risks still missing parameters.
 
 1. **Check availability.** Look for a skill named `erm` among the session's skills, or its `SKILL.md` in the usual skill folders (for example `/mnt/skills/*/erm/`, `~/.claude/skills/erm/`, `.claude/skills/erm/`, the workspace). Do not download or install it unless asked.
-2. **If available, invoke it** by reading its `SKILL.md` and following its workflow:
-   - Risk Context: pass the user's risk title and description and any other known register data. If erm pauses to ask for clarification when the context is ambiguous, answer from the user's description rather than stopping.
-   - Number of Risks (`N`): exactly the number of in-scope risks needing completion, so erm assesses the user's risks and invents none.
-   - Risk Category Filter: the risks' category if known, otherwise Enterprise.
-   - **Protect the user's files.** erm saves `risk_register.csv`, which could overwrite a user file of that name. Run erm in a temporary scratch directory (or direct its output there). If that is impossible, copy the user's file to a temporary location first and restore it byte for byte afterwards. Afterwards the original must have the same name and contents, and all temporary copies and scratch files must be deleted.
-3. **Merge.** Read erm's output with a CSV parser and match rows to the user's risks by title (or ID). Fill **only missing fields**; user supplied values always win and the user's Risk IDs are kept. If the user supplied likelihood or impact, recompute Risk Score and Risk Criticality. If the user gave no IDs, use erm's sorted IDs. Write the result to `<original name>_kri.csv` in the standard 14 column layout (other columns of the user's file are not carried over, since the original keeps them).
-4. **Generate the KRIs** from the completed register as for type A. Causes and Effects from erm do not get the `Inferred:` prefix.
+2. **If available, invoke its Completion Mode** by reading its `SKILL.md` and following the "Completion Mode" section:
+   - Input: the in-scope risks from the user's register (or the existing `_kri` working register), or the risk described in the prompt. Pass any context known about the organisation or project. If erm pauses to ask for clarification, answer from the user's description rather than stopping.
+   - Output: tell erm to save the completed register as `<original name>_kri.csv` in the active workspace directory. This file is this skill's working register, so it may be updated on later runs. It is never the user's original.
+   - erm keeps the user's values and Risk IDs, fills the empty fields, adds Causes or Effects after the user's own where only one was given, recalculates Risk Score and Risk Criticality, and leaves out columns that do not belong in the register. It never writes to the input file. Afterwards confirm that the user's original still has the same name and contents, and delete any temporary files you created (for example for pasted text).
+3. **Use erm's register as it is.** Read it with a CSV parser and do not re-merge it with the original: erm has already kept every user value. In particular keep the Causes and Effects erm added after the user's own, since every Cause needs a leading KRI. Keep erm's report of which fields it generated or added for the closing message.
+4. **Generate the KRIs** from the completed register as for type A. Causes and Effects from erm do not get the `Inferred:` prefix, because they come from erm's assessment rather than a guess.
 5. **If erm is unavailable**, fails, or is declined, carry on as in types B and C: infer, mark `Inferred:`, use `Not rated`. No new register file is written. Do not stop.
+6. **If the installed erm is older than 1.2.0** (its `SKILL.md` has no "Completion Mode" section), use its standard workflow instead: pass the user's risks as the Risk Context with `N` equal to the number of risks needing completion so it invents none, run it in a scratch directory so its `risk_register.csv` cannot overwrite a user file, then merge its output into the user's risks by title or ID, filling only the missing fields, and write `<original name>_kri.csv`. Suggest updating erm to get Completion Mode.
 
-In the closing message say whether erm was used and name the `_kri` file. If erm was unavailable, add one line that installing the erm skill (https://github.com/wai-kwan/enterprise-risk-management) lets this skill generate fuller, rated risk parameters automatically.
+In the closing message say whether erm was used and name the `_kri` file. List the risks where erm generated or added Causes, Effects or ratings, and say that erm's ratings and added content are proposals for the risk owner to review. If erm was unavailable, add one line that installing the erm skill (https://github.com/wai-kwan/enterprise-risk-management) lets this skill generate fuller, rated risk parameters automatically.
 
 ---
 
@@ -204,12 +209,12 @@ Review the written file and fix problems before replying:
 - Indicator Type is only Leading or Lagging, leading KRIs were prioritised (lagging only because good leading ones were exhausted), and every supplied or inferred Cause has a leading KRI.
 - Every threshold set is numeric, non overlapping, gap free, and points the right way for the metric.
 - KRI IDs are unique and in sequence, and no existing ID was renumbered.
-- If erm was invoked: the original register is unchanged (same name and contents), the new register is named `<original name>_kri.csv`, user values were not changed, only missing fields were filled, and no scratch or temporary files remain.
+- If erm was invoked: the original register is unchanged (same name and contents), the new register is named `<original name>_kri.csv`, user values were not changed (erm may have added Causes or Effects after the user's own, never in place of them), the Causes and Effects erm added were kept and each has a leading KRI, and no scratch or temporary files remain.
 - Add mode: no new KRI duplicates an existing one. Replace mode: the backup exists and out of scope rows are unchanged.
 
 ## Final Reply to the User
 Keep it short and do not paste the full table. State:
-- where `kri_register.csv` is, which input type was used, and whether erm was invoked to complete the register;
+- where `kri_register.csv` is, which input type was used, and whether erm was invoked to complete the register (and if so, which risks it completed and that its ratings and added content are proposals to review);
 - how many risks and KRIs were generated in this run, the leading to lagging split, and the total in the file;
 - assumptions, inferred causes and effects (and, if erm was unavailable, the line suggesting it), and any adjustment to the requested count;
 - a reminder that thresholds are starting points to calibrate against their risk appetite and historical data;
