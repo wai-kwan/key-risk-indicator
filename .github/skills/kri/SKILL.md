@@ -7,7 +7,7 @@ metadata:
   tags: "enterprise-risk-management, erm, kri, key-risk-indicators, early-warning, risk-monitoring, risk-management, ai-agents, skills, ai-agents-skill"
   written_by: wai-kwan
   github: "https://github.com/wai-kwan"
-  version: "1.2.0"
+  version: "1.2.1"
   domain: Enterprise Risk Management, Key Risk Indicators, KRI, Risk Monitoring, AI Agents Skill
   standard: Enterprise Risk Management Workflow Specification
 ---
@@ -177,7 +177,7 @@ Create or update a standard CSV file named **`kri_register.csv`** in the active 
 6. **KRI Description and Measurement**: one sentence on what is tracked and why it signals the risk, then how it is measured (formula or data source, and unit). No line breaks.
 7. **Measurement Frequency**: Daily, Weekly, Monthly, Quarterly or Annually.
 8. **Indicator Type**: exactly `Leading` or `Lagging`.
-9. **Linked Cause or Effect**: the Cause (leading) or Effect (lagging) tracked, shortened in your own words. Prefix `Inferred:` when it was not supplied by the user.
+9. **Linked Cause or Effect**: the Cause (leading) or Effect (lagging) tracked, shortened in your own words. Prefix `Inferred:` only when this skill inferred it itself, because it was supplied neither by the user nor by erm.
 10. **Low (Green) Threshold**
 11. **Medium (Amber) Threshold**
 12. **High (Red) Threshold**
